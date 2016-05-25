@@ -55,6 +55,12 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
 {
   // TODO
 
+	uint64 sectors_total = 0;
+	for(int i = 0; i < tracks_per_surface; i++){
+		sectors_total += sectors_innermost_track + (sectors_outermost_track - sectors_innermost_track) * i / ( tracks_per_surface - 1);
+	}
+	sectors_total *= 8;
+
   //
   // print info
   //
@@ -66,6 +72,8 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
        << "  sect on outermost track:   " << sectors_outermost_track << endl
        << "  rpm:                       " << rpm << endl
        << "  sector size:               " << _sector_size << endl
+       << "  number of sectors total:   " << setprecision(3) << fixed << sectors_total << endl
+       << "  capacity (GB):             " << endl
        << endl;
 }
 

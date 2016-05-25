@@ -61,6 +61,8 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
 	}
 	sectors_total *= 8;
 
+	double capacity = sectors_total * sector_size / 1000000000.0;
+
   //
   // print info
   //
@@ -72,8 +74,8 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
        << "  sect on outermost track:   " << sectors_outermost_track << endl
        << "  rpm:                       " << rpm << endl
        << "  sector size:               " << _sector_size << endl
-       << "  number of sectors total:   " << setprecision(3) << fixed << sectors_total << endl
-       << "  capacity (GB):             " << endl
+       << "  number of sectors total:   " << sectors_total << endl
+       << "  capacity (GB):             " << setprecision(3) << fixed << capacity << endl
        << endl;
 }
 

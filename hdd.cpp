@@ -101,7 +101,13 @@ double HDD::write(double ts, uint64 address, uint64 size)
 double HDD::seek_time(uint32 from_track, uint32 to_track)
 {
   // TODO
-  return 0.0;
+
+  double unit_seek_time = _seek_per_track;
+
+  if(from_track - to_track < 0)
+    return ( unit_seek_time * (from_track - to_track) ) + _seek_overhead;
+  else
+    return ( unit_seek_time * (to_track - from_track) ) + _seek_overhead;
 }
 
 double HDD::wait_time(void)
@@ -113,6 +119,10 @@ double HDD::wait_time(void)
 double HDD::read_time(uint64 sectors)
 {
   // TODO
+
+  double curr_track = _head_pos;
+
+//  return 60.0 / _rpm * sectors / ;
   return 0.0;
 }
 

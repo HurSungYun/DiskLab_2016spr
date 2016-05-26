@@ -63,6 +63,8 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
 
 	double capacity = sectors_total * sector_size / 1000000000.0;
 
+	_head_pos = 0;
+
   //
   // print info
   //
@@ -105,7 +107,7 @@ double HDD::seek_time(uint32 from_track, uint32 to_track)
 double HDD::wait_time(void)
 {
   // TODO
-  return 0.0;
+  return 30.0 / _rpm;
 }
 
 double HDD::read_time(uint64 sectors)

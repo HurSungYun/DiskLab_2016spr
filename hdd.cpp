@@ -101,7 +101,7 @@ double HDD::read(double ts, uint64 address, uint64 size)
     return ts;
 
   while(1){
-    if(target.max_access > number_of_sector){ 
+    if(target.max_access - target.sector > number_of_sector){ 
       ts += seek_time(_head_pos, target.track) + wait_time() + read_time(number_of_sector);
       _head_pos = target.track;
       break;
@@ -109,8 +109,8 @@ double HDD::read(double ts, uint64 address, uint64 size)
 
     ts += seek_time(_head_pos, target.track) + wait_time() + read_time(target.max_access);
     _head_pos = target.track;
-    curr_address += target.max_access * _sector_size;
-    number_of_sector -= target.max_access;
+    curr_address += (target.max_access - target.sector + 1) * _sector_size;
+    number_of_sector -= (target.max_access - target.sector);
     if(!decode(curr_address, &target)) return ts;
   }
 

@@ -91,13 +91,27 @@ HDD::~HDD(void)
 double HDD::read(double ts, uint64 address, uint64 size)
 {
   // TODO
+  HDD_Position* target;
+
   return ts;
+
+  if(!decode(address, target))
+    return ts;
+
+  return ts + seek_time(_head_pos, target->track) + wait_time() + read_time(size / _sector_size);
 }
 
 double HDD::write(double ts, uint64 address, uint64 size)
 {
   // TODO
+  HDD_Position* target;
+
   return ts;
+
+  if(!decode(address, target))
+    return ts;
+
+  return ts + seek_time(_head_pos, target->track) + wait_time() + write_time(size / _sector_size);
 }
 
 double HDD::seek_time(uint32 from_track, uint32 to_track)

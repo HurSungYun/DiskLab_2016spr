@@ -51,19 +51,21 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
          bool verbose)
   : _surfaces(surfaces), _rpm(rpm), _sector_size(sector_size),
     _seek_overhead(seek_overhead), _seek_per_track(seek_per_track),
-    _verbose(verbose)
+    _verbose(verbose), _sectors_innermost_track(sectors_innermost_track), _sectors_outermost_track(sectors_outermost_track),
+    _tracks_per_surface(tracks_per_surface)
+
 {
   // TODO
 
-	uint64 sectors_total = 0;
-	for(int i = 0; i < tracks_per_surface; i++){
-		sectors_total += sectors_innermost_track + (sectors_outermost_track - sectors_innermost_track) * i / ( tracks_per_surface - 1);
-	}
-	sectors_total *= 8;
+  uint64 sectors_total = 0;
+  for(uint32 i = 0; i < tracks_per_surface; i++){
+    sectors_total += sectors_in_track(i);
+  }
+  sectors_total *= surfaces;
 
-	double capacity = sectors_total * sector_size / 1000000000.0;
+  double capacity = sectors_total * sector_size / 1000000000.0;
 
-	_head_pos = 0;
+  _head_pos = 0;
 
   //
   // print info
@@ -102,12 +104,10 @@ double HDD::seek_time(uint32 from_track, uint32 to_track)
 {
   // TODO
 
-  double unit_seek_time = _seek_per_track;
-
   if(from_track - to_track < 0)
-    return ( unit_seek_time * (from_track - to_track) ) + _seek_overhead;
-  else
-    return ( unit_seek_time * (to_track - from_track) ) + _seek_overhead;
+    return ( _seek_per_track * (from_track - to_track) ) + _seek_overhead;
+
+  return ( _seek_per_track * (to_track - from_track) ) + _seek_overhead;
 }
 
 double HDD::wait_time(void)
@@ -119,11 +119,7 @@ double HDD::wait_time(void)
 double HDD::read_time(uint64 sectors)
 {
   // TODO
-
-  double curr_track = _head_pos;
-
-//  return 60.0 / _rpm * sectors / ;
-  return 0.0;
+  return 60.0 / _rpm * sectors / sectors_in_track(_head_pos);
 }
 
 double HDD::write_time(uint64 sectors)
@@ -138,3 +134,7 @@ bool HDD::decode(uint64 address, HDD_Position *pos)
   return false;
 }
 
+int HDD::sectors_in_track(uint32 sector_index)
+{
+  return _sectors_innermost_track + (_sectors_outermost_track - _sectors_innermost_track) * sector_index / ( _tracks_per_surface - 1);
+}

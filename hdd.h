@@ -116,14 +116,17 @@ class HDD : public Disk {
     double _seek_overhead;          ///< seek overhead
     double _seek_per_track;         ///< seek time per track the head is moved
     // TODO add more fields as necessary
-
+    uint32 _sectors_innermost_track;
+    uint32 _sectors_outermost_track;
+    uint32 _tracks_per_surface;
 
     /// @brief translate a byte address into a position on the HDD
     /// @param address byte address
     /// @param pos (output) pointer to result
     /// @retval true if translation was successful, false otherwise
     bool   decode(uint64 address, HDD_Position *pos);
-
+    
+    int    sectors_in_track(uint32 sector_index);
     // TODO
     // add more protected methods as necessary
 };

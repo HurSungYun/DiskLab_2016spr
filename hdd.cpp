@@ -91,14 +91,30 @@ HDD::~HDD(void)
 double HDD::read(double ts, uint64 address, uint64 size)
 {
   // TODO
-  HDD_Position* target;
+  HDD_Position target;
+  uint64 number_of_sector = size / _sector_size;
+  uint64 curr_address = address;
 
-  return ts;
+//  return ts;
 
-  if(!decode(address, target))
+  if(!decode(curr_address, &target))
     return ts;
 
-  return ts + seek_time(_head_pos, target->track) + wait_time() + read_time(size / _sector_size);
+  while(1){
+    if(target.max_access > number_of_sector){ 
+      ts += seek_time(_head_pos, target.track) + wait_time() + read_time(number_of_sector);
+      _head_pos = target.track;
+      break;
+    }
+
+    ts += seek_time(_head_pos, target.track) + wait_time() + read_time(target.max_access);
+    _head_pos = target.track;
+    curr_address += target.max_access * _sector_size;
+    number_of_sector -= target.max_access;
+    if(!decode(curr_address, &target)) return ts;
+  }
+
+  return ts;
 }
 
 double HDD::write(double ts, uint64 address, uint64 size)
@@ -117,6 +133,9 @@ double HDD::write(double ts, uint64 address, uint64 size)
 double HDD::seek_time(uint32 from_track, uint32 to_track)
 {
   // TODO
+
+  if(from_track - to_track == 0)
+    return 0.0;
 
   if(from_track - to_track < 0)
     return ( _seek_per_track * (from_track - to_track) ) + _seek_overhead;
@@ -145,7 +164,12 @@ double HDD::write_time(uint64 sectors)
 bool HDD::decode(uint64 address, HDD_Position *pos)
 {
   // TODO
-  return false;
+
+  pos->surface = 0;
+  pos->sector = 0;
+  pos->track = 0;
+  pos->max_access = 4000;
+  return true;
 }
 
 int HDD::sectors_in_track(uint32 sector_index)

@@ -125,7 +125,9 @@ class HDD : public Disk {
     /// @param pos (output) pointer to result
     /// @retval true if translation was successful, false otherwise
     bool   decode(uint64 address, HDD_Position *pos);
-    
+    void   move_next_track(HDD_Position *pos); 
+    uint64 read_remain_sectors(HDD_Position *pos);
+    uint64 read_remain_sectors_end(HDD_Position *pos, HDD_Position *end);
     int    sectors_in_track(uint32 sector_index);
     // TODO
     // add more protected methods as necessary

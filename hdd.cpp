@@ -94,40 +94,30 @@ double HDD::read(double ts, uint64 address, uint64 size)
   HDD_Position target;
   uint64 number_of_sector = size / _sector_size;
   uint64 curr_address = address;
+  double temp = 0;
 
+  if(size % _sector_size != 0) number_of_sector++;
 //  return ts;
 
-  if(!decode(curr_address, &target))
-    return ts;
 
   while(1){
-    if(target.max_access - target.sector > number_of_sector){ 
-      ts += seek_time(_head_pos, target.track) + wait_time() + read_time(number_of_sector);
-      _head_pos = target.track;
-      break;
-    }
+    //update
+    if(!decode(curr_address, &target))
+      return ts;
+    //check remain or not
 
-    ts += seek_time(_head_pos, target.track) + wait_time() + read_time(target.max_access);
-    _head_pos = target.track;
-    curr_address += (target.max_access - target.sector + 1) * _sector_size;
-    number_of_sector -= (target.max_access - target.sector);
-    if(!decode(curr_address, &target)) return ts;
+    //read
+
   }
-
-  return ts;
+  
+  
+  return ts + temp;
 }
 
 double HDD::write(double ts, uint64 address, uint64 size)
 {
   // TODO
-  HDD_Position* target;
-
-  return ts;
-
-  if(!decode(address, target))
-    return ts;
-
-  return ts + seek_time(_head_pos, target->track) + wait_time() + write_time(size / _sector_size);
+  return read(ts, address, size);
 }
 
 double HDD::seek_time(uint32 from_track, uint32 to_track)
@@ -158,17 +148,48 @@ double HDD::read_time(uint64 sectors)
 double HDD::write_time(uint64 sectors)
 {
   // TODO
-  return 0.0;
+  return read_time(sectors);
 }
 
 bool HDD::decode(uint64 address, HDD_Position *pos)
 {
   // TODO
+  uint32 curr_sector;
+  uint32 curr_track;
+  uint32 curr_surface;
+  int flag = 0;
 
-  pos->surface = 0;
-  pos->sector = 0;
-  pos->track = 0;
-  pos->max_access = 4000;
+  for(curr_track = 0; curr_track < _tracks_per_surface; curr_track++){
+    if( address - ( _surfaces * _sector_size * sectors_in_track(curr_track) ) < 0){
+
+      for(curr_sector = 0; curr_sector < sectors_in_track(curr_track); curr_sector++){
+        if(address - (_surfaces * _sector_size) < 0){
+
+          curr_sector = address / _sector_size;
+
+/*          if(address % _sector_size != 0)
+            curr_sector++;
+*/
+          if(curr_sector >= _surfaces) ; /* never happens */
+          
+          break;
+        }
+        address -= _surfaces * _sector_size;
+      }
+
+      flag = 1;
+      break;
+    }
+
+    address -= _surfaces * _sector_size * sectors_in_track(curr_track);
+  }
+  if(flag == 0) return false;
+
+  pos->surface = curr_surface;
+  pos->sector = curr_sector;
+  pos->track = curr_track;
+  pos->max_access = sectors_in_track(curr_track) - curr_sector - 1;
+  cout << pos->surface << " " << pos->sector << " " << pos->track << " " << pos->max_access << endl;
   return true;
 }
 

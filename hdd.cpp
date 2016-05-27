@@ -92,21 +92,29 @@ double HDD::read(double ts, uint64 address, uint64 size)
 {
   // TODO
   HDD_Position target;
-  uint64 number_of_sector = size / _sector_size;
+  uint64 number_of_sector = (address + size - 1) / _sector_size - size / _sector_size; /* need to be modified. It's wrong */
   uint64 curr_address = address;
+  uint32 temp_head = _head_pos;
   double temp = 0;
 
-  if(size % _sector_size != 0) number_of_sector++;
 //  return ts;
+
+  if(decode(curr_address, &target)) return 9.0;
+
+  return ts;
 
 
   while(1){
-    //update
-    if(!decode(curr_address, &target))
+    //decode
+    if(!decode(curr_address, &target)){
+      _head_pos = temp_head;
       return ts;
+    }
     //check remain or not
 
     //read
+
+    //update
 
   }
   
@@ -154,18 +162,18 @@ double HDD::write_time(uint64 sectors)
 bool HDD::decode(uint64 address, HDD_Position *pos)
 {
   // TODO
-  uint32 curr_sector;
-  uint32 curr_track;
-  uint32 curr_surface;
+  uint64 curr_sector;
+  uint64 curr_track;
+  uint64 curr_surface;
   int flag = 0;
 
   for(curr_track = 0; curr_track < _tracks_per_surface; curr_track++){
-    if( address - ( _surfaces * _sector_size * sectors_in_track(curr_track) ) < 0){
 
+
+    if( address < _surfaces * _sector_size * sectors_in_track(curr_track) ){
       for(curr_sector = 0; curr_sector < sectors_in_track(curr_track); curr_sector++){
-        if(address - (_surfaces * _sector_size) < 0){
-
-          curr_sector = address / _sector_size;
+        if(address < _surfaces * _sector_size ){
+          curr_surface = address / _sector_size;
 
 /*          if(address % _sector_size != 0)
             curr_sector++;
@@ -188,8 +196,16 @@ bool HDD::decode(uint64 address, HDD_Position *pos)
   pos->surface = curr_surface;
   pos->sector = curr_sector;
   pos->track = curr_track;
-  pos->max_access = sectors_in_track(curr_track) - curr_sector - 1;
+  pos->max_access = sectors_in_track(curr_track) - curr_sector;
+
+/*  uint64 check = 0;
+  for(uint32 i = 0; i < pos->track; i++) check += sectors_in_track(i) * _surfaces * _sector_size;
+  check += pos->sector * _surfaces * _sector_size;
+  check += pos->surface * _sector_size;
+  cout.flush();
+  cout << check << endl;
   cout << pos->surface << " " << pos->sector << " " << pos->track << " " << pos->max_access << endl;
+*/
   return true;
 }
 

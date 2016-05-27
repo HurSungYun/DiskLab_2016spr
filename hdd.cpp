@@ -67,6 +67,7 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
 
   _head_pos = 0;
 
+
   //
   // print info
   //
@@ -99,7 +100,6 @@ double HDD::read(double ts, uint64 address, uint64 size)
 
 
   uint64 tot_sect = 0;
-  cout << "seek_time(4): " << seek_time(0,4) << " read_time(2048): " << read_time(2048) << endl;
   if(!decode(curr_address, &curr)) return ts;
   if(!decode(end_address, &to)) return ts;
   cout << curr.track << " " << curr.sector << " " << curr.surface << endl;
@@ -107,25 +107,28 @@ double HDD::read(double ts, uint64 address, uint64 size)
 
   temp += seek_time(_head_pos, curr.track);
 
+  _head_pos = curr.track;
+
   if(curr.track < to.track){
     while(1){
       temp += wait_time();
       temp += read_time(read_remain_sectors(&curr));
-//      cout << "remain_sectors : " << read_remain_sectors(&curr) << endl;
+//      cout << "read_remain_sectors: " << read_remain_sectors(&curr) << " " << read_time(read_remain_sectors(&curr)) << endl;
+
       tot_sect += read_remain_sectors(&curr);
       move_next_track(&curr);
       temp += seek_time(curr.track - 1, curr.track);
+      _head_pos++;
       if(curr.track == to.track) break;
     }
   }
 
   temp += wait_time();
-//  cout << "read_remain_sectors_end : " <<  read_time(read_remain_sectors_end(&curr, &to)) << endl;
   temp += read_time(read_remain_sectors_end(&curr, &to));
-  cout << "read_time " << read_remain_sectors_end(&curr, &to) << " " << read_time(read_remain_sectors_end(&curr, &to)) << endl;
+//  cout << "read_time " << read_remain_sectors_end(&curr, &to) << " " << read_time(read_remain_sectors_end(&curr, &to)) << endl;
   tot_sect += read_remain_sectors_end(&curr, &to);
 
-  cout << tot_sect << endl;
+//  cout << tot_sect << endl;
 
   _head_pos = to.track;
   
@@ -142,7 +145,7 @@ double HDD::seek_time(uint32 from_track, uint32 to_track)
 {
   // TODO
 
-  if(from_track - to_track == 0)
+  if(from_track == to_track)
     return 0.0;
 
   if(from_track > to_track)
@@ -234,7 +237,7 @@ void HDD::move_next_track(HDD_Position *pos)
 
 uint64 HDD::read_remain_sectors(HDD_Position *pos)
 {
-  return (pos->max_access - pos->sector - 1) * _surfaces +  (_surfaces - pos->surface);
+  return pos->max_access * _surfaces + (_surfaces - pos->surface);
 }
 
 uint64 HDD::read_remain_sectors_end(HDD_Position *pos, HDD_Position *end)

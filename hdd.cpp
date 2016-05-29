@@ -106,6 +106,7 @@ double HDD::read(double ts, uint64 address, uint64 size)
   cout << to.track << " " << to.sector << " " << to.surface << endl;
 
   temp += seek_time(_head_pos, curr.track);
+  cout << "seek time: " << _head_pos << " -> " << curr.track << " : " << seek_time(_head_pos, curr.track) << endl;
 
   _head_pos = curr.track;
 
@@ -124,8 +125,10 @@ double HDD::read(double ts, uint64 address, uint64 size)
   }
 
   temp += wait_time();
+  cout << "wait_time : " << wait_time() << endl;
   temp += read_time(read_remain_sectors_end(&curr, &to));
 //  cout << "read_time " << read_remain_sectors_end(&curr, &to) << " " << read_time(read_remain_sectors_end(&curr, &to)) << endl;
+  cout << "read_time : " << read_remain_sectors_end(&curr, &to) << ", " << _head_pos << " -> " << read_time(read_remain_sectors_end(&curr, &to)) << endl;
   tot_sect += read_remain_sectors_end(&curr, &to);
 
 //  cout << tot_sect << endl;
@@ -188,9 +191,6 @@ bool HDD::decode(uint64 address, HDD_Position *pos)
         if(address < _surfaces * _sector_size ){
           curr_surface = address / _sector_size;
 
-/*          if(address % _sector_size != 0)
-            curr_sector++;
-*/
           if(curr_sector >= _surfaces) ; /* never happens */
           
           break;
@@ -237,7 +237,7 @@ void HDD::move_next_track(HDD_Position *pos)
 
 uint64 HDD::read_remain_sectors(HDD_Position *pos)
 {
-  return pos->max_access * _surfaces + (_surfaces - pos->surface);
+  return (pos->max_access - 1) * _surfaces + (_surfaces - pos->surface);
 }
 
 uint64 HDD::read_remain_sectors_end(HDD_Position *pos, HDD_Position *end)

@@ -115,7 +115,6 @@ class HDD : public Disk {
     uint32 _sector_size;            ///< number of bytes per sector
     double _seek_overhead;          ///< seek overhead
     double _seek_per_track;         ///< seek time per track the head is moved
-    // TODO add more fields as necessary
     uint32 _sectors_innermost_track;
     uint32 _sectors_outermost_track;
     uint32 _tracks_per_surface;
@@ -125,12 +124,11 @@ class HDD : public Disk {
     /// @param pos (output) pointer to result
     /// @retval true if translation was successful, false otherwise
     bool   decode(uint64 address, HDD_Position *pos);
+    uint64 encode(HDD_Position *pos);
     void   move_next_track(HDD_Position *pos); 
     uint64 read_remain_sectors(HDD_Position *pos);
     uint64 read_remain_sectors_end(HDD_Position *pos, HDD_Position *end);
     int    sectors_in_track(uint32 sector_index);
-    // TODO
-    // add more protected methods as necessary
 };
 
 #endif // __CA_HDD_H__

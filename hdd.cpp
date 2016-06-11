@@ -100,8 +100,14 @@ double HDD::read(double ts, uint64 address, uint64 size)
   double temp = 0;
 
   uint64 tot_sect = 0;
-  if(!decode(curr_address, &curr)) return ts;  // get the first block to start
-  if(!decode(encode(&curr) + size - 1, &to)) return ts;  // get the last block to end
+  if(!decode(curr_address, &curr)){
+    cout << "address range error!" << endl;
+    return ts;  // get the first block to start
+  }
+  if(!decode(encode(&curr) + size - 1, &to)){
+    cout << "address range error!" << endl;
+    return ts;  // get the last block to end
+  }
 
   temp += seek_time(_head_pos, curr.track);
 

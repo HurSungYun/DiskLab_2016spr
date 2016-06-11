@@ -30,6 +30,9 @@
 /// DAMAGE.
 //------------------------------------------------------------------------------
 
+
+/* ---------------------------------------------------------------------------- sector major sequential implementation */
+
 #include <cassert>
 #include <limits>
 #include <cmath>
@@ -85,6 +88,7 @@ HDD::HDD(uint32 surfaces, uint32 tracks_per_surface,
 HDD::~HDD(void)
 {
   // TODO
+
 }
 
 double HDD::read(double ts, uint64 address, uint64 size)
@@ -96,15 +100,15 @@ double HDD::read(double ts, uint64 address, uint64 size)
   double temp = 0;
 
   uint64 tot_sect = 0;
-  if(!decode(curr_address, &curr)) return ts;
-  if(!decode(encode(&curr) + size - 1, &to)) return ts;
+  if(!decode(curr_address, &curr)) return ts;  // get the first block to start
+  if(!decode(encode(&curr) + size - 1, &to)) return ts;  // get the last block to end
 
   temp += seek_time(_head_pos, curr.track);
 
   _head_pos = curr.track;
 
   if(curr.track < to.track){
-    while(1){
+    while(1){  // this is loop for calculation time by track
       temp += wait_time();
       temp += read_time(read_remain_sectors(&curr));
 
@@ -116,7 +120,7 @@ double HDD::read(double ts, uint64 address, uint64 size)
   }
 
   temp += wait_time();
-  temp += read_time(read_remain_sectors_end(&curr, &to));
+  temp += read_time(read_remain_sectors_end(&curr, &to)); // calculate last track
 
   _head_pos = to.track;
   
@@ -125,15 +129,15 @@ double HDD::read(double ts, uint64 address, uint64 size)
 
 double HDD::write(double ts, uint64 address, uint64 size)
 {
-  return read(ts, address, size);
+  return read(ts, address, size); // write is same with read because they have no prefetch or something
 }
 
 double HDD::seek_time(uint32 from_track, uint32 to_track)
 {
-  if(from_track == to_track)
+  if(from_track == to_track)  // if track is same, overhead is not needed
     return 0.0;
 
-  if(from_track > to_track)
+  if(from_track > to_track)  // absolute value of it
     return ( _seek_per_track * (from_track - to_track) ) + _seek_overhead;
 
   return ( _seek_per_track * (to_track - from_track) ) + _seek_overhead;
@@ -141,17 +145,17 @@ double HDD::seek_time(uint32 from_track, uint32 to_track)
 
 double HDD::wait_time(void)
 {
-  return 30.0 / _rpm;
+  return 30.0 / _rpm;  // average wait time
 }
 
 double HDD::read_time(uint64 sectors)
 {
-  return 60.0 / _rpm * sectors / sectors_in_track(_head_pos);
+  return 60.0 / _rpm * sectors / sectors_in_track(_head_pos);  // read time differ by sectors in track, because of radius
 }
 
 double HDD::write_time(uint64 sectors)
 {
-  return read_time(sectors);
+  return read_time(sectors);  // same
 }
 
 bool HDD::decode(uint64 address, HDD_Position *pos)
@@ -163,7 +167,7 @@ bool HDD::decode(uint64 address, HDD_Position *pos)
 
   for(curr_track = 0; curr_track < _tracks_per_surface; curr_track++){
 
-    if( address < _surfaces * _sector_size * sectors_in_track(curr_track) ){
+    if( address < _surfaces * _sector_size * sectors_in_track(curr_track) ){  // if 
       for(curr_sector = 0; curr_sector < sectors_in_track(curr_track); curr_sector++){
         if(address < _surfaces * _sector_size ){
           curr_surface = address / _sector_size;
@@ -173,23 +177,23 @@ bool HDD::decode(uint64 address, HDD_Position *pos)
         address -= _surfaces * _sector_size;
       }
 
-      flag = 1;
+      flag = 1; // make flag as 1 because it finished decoding
       break;
     }
 
-    address -= _surfaces * _sector_size * sectors_in_track(curr_track);
+    address -= _surfaces * _sector_size * sectors_in_track(curr_track);  // fill the bytes of sector and go over it
   }
-  if(flag == 0) return false;
+  if(flag == 0) return false;  // if address over size, it would be an error.
 
   pos->surface = curr_surface;
   pos->sector = curr_sector;
   pos->track = curr_track;
   pos->max_access = sectors_in_track(curr_track) - curr_sector;
 
-  return true;
+  return true;  // otherwise, decoded well
 }
 
-uint64 HDD::encode(HDD_Position *pos)
+uint64 HDD::encode(HDD_Position *pos) // this function encode to the address again. Because of the floor function of decode, the end sector could be changed
 {
   uint64 ret = 0;
   uint32 i;
@@ -202,12 +206,12 @@ uint64 HDD::encode(HDD_Position *pos)
   return ret;
 }
 
-int HDD::sectors_in_track(uint32 track_index)
+int HDD::sectors_in_track(uint32 track_index)  // calculate how many sectors in track
 {
   return _sectors_innermost_track + (_sectors_outermost_track - _sectors_innermost_track) * track_index / ( _tracks_per_surface - 1);
 }
 
-void HDD::move_next_track(HDD_Position *pos)
+void HDD::move_next_track(HDD_Position *pos) // this function set the information of next track
 {
   pos->surface = 0;
   pos->sector = 0;
@@ -215,12 +219,12 @@ void HDD::move_next_track(HDD_Position *pos)
   pos->max_access = sectors_in_track(pos->track);
 }
 
-uint64 HDD::read_remain_sectors(HDD_Position *pos)
+uint64 HDD::read_remain_sectors(HDD_Position *pos) // read remaining sectors as checking max_access
 {
   return (pos->max_access - 1) * _surfaces + (_surfaces - pos->surface);
 }
 
-uint64 HDD::read_remain_sectors_end(HDD_Position *pos, HDD_Position *end)
+uint64 HDD::read_remain_sectors_end(HDD_Position *pos, HDD_Position *end)  // read remaining sectors at last track to read
 {
   uint64 ret = (end->sector - pos->sector) * _surfaces;
   ret += end->surface + 1;
